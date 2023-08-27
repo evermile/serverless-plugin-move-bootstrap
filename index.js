@@ -88,8 +88,15 @@ module.exports = class Plugin {
 
   cleanupTmpDir() {
     const config = this.getConfig();
-    fs.rm(config.tmpDir, { recursive: true }, (err) => {
-      if (err) this.serverless.cli.consoleLog("ERROR: " + err);
+    fs.access(config.tmpDir, fs.F_OK, (err) => {
+      if (err) {
+        return;
+      }
+
+      //file exists
+      fs.rm(config.tmpDir, { recursive: true }, (err) => {
+        if (err) this.serverless.cli.consoleLog("ERROR: " + err);
+      });
     });
   }
 
