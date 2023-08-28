@@ -29,6 +29,7 @@ module.exports = class Plugin {
   ensureIndividually(name, func) {
     this.serverless.service.functions[name].package.individually = true;
   }
+
   async moveBootstraps() {
     let names = Object.keys(this.serverless.service.functions);
 
@@ -70,17 +71,29 @@ module.exports = class Plugin {
 
     const zip = new AdmZip(zipFile);
     zip.extractAllTo(targetDir, true);
-    fs.rename(targetDir + "/" + handler, newPath, function (err) {
-      if (err) this.serverless.cli.consoleLog("ERROR: " + err);
-      const dirToDelete = handler.split("/")[0];
-      fs.rm(targetDir + "/" + dirToDelete, { recursive: true }, (err) => {
-        if (err) this.serverless.cli.consoleLog("ERROR: " + err);
-        fs.chmod(newPath, 0o755, function (err) {
-          if (err) this.serverless.cli.consoleLog("ERROR: " + err);
-          // Zip it back up
-          var newZip = new AdmZip();
-          newZip.addLocalFolder(targetDir);
-          newZip.writeZip(zipFile);
+    return new Promise((resolve, reject) => {
+      fs.rename(targetDir + "/" + handler, newPath, function (err) {
+        if (err) {
+          this.serverless.cli.consoleLog("ERROR: " + err);
+          reject();
+        }
+        const dirToDelete = handler.split("/")[0];
+        fs.rm(targetDir + "/" + dirToDelete, { recursive: true }, (err) => {
+          if (err) {
+            this.serverless.cli.consoleLog("ERROR: " + err);
+            reject();
+          }
+          fs.chmod(newPath, 0o755, function (err) {
+            if (err) {
+              this.serverless.cli.consoleLog("ERROR: " + err);
+              reject();
+            }
+            // Zip it back up
+            var newZip = new AdmZip();
+            newZip.addLocalFolder(targetDir);
+            newZip.writeZip(zipFile);
+            resolve();
+          });
         });
       });
     });
