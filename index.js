@@ -42,11 +42,17 @@ module.exports = class Plugin {
       },
       { concurrency: os.cpus().length }
     );
-    const timeEnd = process.hrtime(timeStart);
+
+    let moveTime = process.hrtime(timeStart);
+    if (moveTime[0] === 0) {
+      this.serverless.cli.consoleLog("Sleeping for 500 ms to make sure we don't get a race which breaks the HMAC signature")
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    moveTime = process.hrtime(timeStart);
 
     this.serverless.cli.consoleLog(
       `Bootstrap move Plugin: ${chalk.yellow(
-        "Move time: " + prettyHrtime(timeEnd)
+        "Move time: " + prettyHrtime(moveTime)
       )}`
     );
   }
